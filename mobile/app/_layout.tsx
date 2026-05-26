@@ -1,16 +1,8 @@
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  useFonts,
-} from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -34,31 +26,29 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-  });
+  const hiddenRef = useRef(false);
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
+  const hideSplash = () => {
+    if (!hiddenRef.current) {
+      hiddenRef.current = true;
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  };
 
-  if (!fontsLoaded && !fontError) return null;
+  useEffect(() => {
+    // Délai maximum de 3 secondes — la splash se cache quoi qu'il arrive
+    const timer = setTimeout(hideSplash, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <KeyboardProvider>
-              <AuthProvider>
-                <RootLayoutNav />
-              </AuthProvider>
-            </KeyboardProvider>
+          <GestureHandlerRootView style={{ flex: 1 }} onLayout={hideSplash}>
+            <AuthProvider>
+              <RootLayoutNav />
+            </AuthProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
       </ErrorBoundary>
