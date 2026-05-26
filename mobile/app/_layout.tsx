@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -31,13 +32,13 @@ export default function RootLayout() {
   const hideSplash = () => {
     if (!hiddenRef.current) {
       hiddenRef.current = true;
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {});
     }
   };
 
   useEffect(() => {
-    // Délai maximum de 3 secondes — la splash se cache quoi qu'il arrive
-    const timer = setTimeout(hideSplash, 3000);
+    // Timeout de 2 secondes — la splash se cache quoi qu'il arrive
+    const timer = setTimeout(hideSplash, 2000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -46,9 +47,11 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView style={{ flex: 1 }} onLayout={hideSplash}>
-            <AuthProvider>
-              <RootLayoutNav />
-            </AuthProvider>
+            <KeyboardProvider>
+              <AuthProvider>
+                <RootLayoutNav />
+              </AuthProvider>
+            </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
       </ErrorBoundary>
