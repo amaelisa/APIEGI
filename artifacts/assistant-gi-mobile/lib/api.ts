@@ -1,7 +1,16 @@
-const getBaseUrl = () => {
-  const url = process.env.EXPO_PUBLIC_API_URL ?? "";
-  return url.replace(/\/$/, "");
-};
+function getBaseUrl(): string {
+  // EXPO_PUBLIC_API_URL takes priority — must be set to the external FastAPI backend URL.
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (apiUrl) return apiUrl.replace(/\/$/, "");
+
+  // Fallback for Replit web preview: EXPO_PUBLIC_DOMAIN is injected by the dev script.
+  // Native (iOS/Android) still needs EXPO_PUBLIC_API_URL to reach the external backend.
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (domain) return `https://${domain}`;
+
+  // Empty string makes relative fetch() calls, which work only in the web renderer.
+  return "";
+}
 
 export interface LoginResponse {
   access_token: string;
@@ -132,14 +141,28 @@ export async function fetchMatieres(token: string, niveau?: string): Promise<Mat
   return data.matieres ?? [];
 }
 
+export interface AttachedFile {
+  uri: string;
+  name: string;
+  mimeType?: string;
+}
+
 export async function sendChatMessage(
   matiereId: number | string,
   message: string,
-  token: string
+  token: string,
+  file?: AttachedFile | null
 ): Promise<ChatResponse> {
   const body = new FormData();
   body.append("matiere_id", String(matiereId));
-  body.append("message", message);
+  body.append("message", message || "Analyse de document");
+  if (file) {
+    body.append("file", {
+      uri: file.uri,
+      name: file.name,
+      type: file.mimeType ?? "application/octet-stream",
+    } as unknown as Blob);
+  }
   return apiFetch<ChatResponse>("/api/chat", { method: "POST", body }, token);
 }
 

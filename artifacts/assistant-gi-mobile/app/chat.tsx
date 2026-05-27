@@ -17,7 +17,7 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ChatBubble } from "@/components/ChatBubble";
-import { ChatInput } from "@/components/ChatInput";
+import { AttachedFile, ChatInput } from "@/components/ChatInput";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -78,15 +78,18 @@ export default function ChatScreen() {
   }, [selectedMatiere, token]);
 
   const handleSend = useCallback(
-    async (text: string) => {
+    async (text: string, file: AttachedFile | null) => {
       if (!selectedMatiere || !token) return;
-      const userMsg: ChatMessage = { role: "user", content: text };
+      const userContent = file
+        ? `[Fichier joint : ${file.name}]${text ? `\n\n${text}` : ""}`
+        : text;
+      const userMsg: ChatMessage = { role: "user", content: userContent };
       setMessages((prev) => [userMsg, ...prev]);
       setSending(true);
       const capturedToken = token;
       const capturedMatiereId = selectedMatiere.id;
       try {
-        const res = await sendChatMessage(capturedMatiereId, text, capturedToken);
+        const res = await sendChatMessage(capturedMatiereId, text, capturedToken, file);
         const aiMsg: ChatMessage = {
           role: "assistant",
           content: res.reply,
