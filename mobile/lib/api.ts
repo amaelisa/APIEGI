@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// Production Render API backend URL
 const API_BASE =
   process.env.EXPO_PUBLIC_API_URL ||
   "https://assistant-gi-backendd.onrender.com";
