@@ -35,13 +35,14 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     const trimEmail = email.trim();
     const trimPass = password.trim();
+    const trimName = fullName.trim();
     if (!trimEmail || !trimPass) {
       Alert.alert("Champs requis", "Veuillez remplir email et mot de passe.");
       return;
     }
     setLoading(true);
     try {
-      await registerUser(trimEmail, trimPass, fullName.trim() || undefined);
+      await registerUser(trimName, trimEmail, trimPass);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setStep("verify");
     } catch (err: unknown) {
@@ -61,8 +62,9 @@ export default function RegisterScreen() {
     }
     setLoading(true);
     try {
-      const res = await verifyEmailCode(email.trim(), trimCode);
-      await signIn(res.access_token);
+      const res = await verifyEmailCode(email.trim(), trimCode, fullName.trim());
+      const token = (res.access_token ?? "") as string;
+      await signIn(token);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/chat");
     } catch (err: unknown) {

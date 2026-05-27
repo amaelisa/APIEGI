@@ -126,7 +126,7 @@ export function SubjectPicker({
                   ]}
                   numberOfLines={2}
                 >
-                  {item.nom}
+                  {item.nom_matiere}
                 </Text>
                 {isSelected && (
                   <Feather name="check" size={16} color={colors.primary} />

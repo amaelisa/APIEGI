@@ -87,7 +87,11 @@ export default function ChatScreen() {
       const capturedMatiereId = selectedMatiere.id;
       try {
         const res = await sendChatMessage(capturedMatiereId, text, capturedToken);
-        const aiMsg: ChatMessage = { role: "assistant", content: res.response };
+        const aiMsg: ChatMessage = {
+          role: "assistant",
+          content: res.reply,
+          isRejected: res.autorise === false,
+        };
         setMessages((prev) => [aiMsg, ...prev]);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       } catch (err: unknown) {
@@ -130,7 +134,7 @@ export default function ChatScreen() {
             style={[styles.subjectBtnText, { color: selectedMatiere ? colors.foreground : colors.muted }]}
             numberOfLines={1}
           >
-            {selectedMatiere ? selectedMatiere.nom : "Choisir une matière"}
+            {selectedMatiere ? selectedMatiere.nom_matiere : "Choisir une matière"}
           </Text>
           <Feather name="chevron-down" size={14} color={colors.muted} />
         </TouchableOpacity>
@@ -188,7 +192,7 @@ export default function ChatScreen() {
                     <Feather name="message-circle" size={32} color={colors.border} />
                     <Text style={[styles.chatEmptyText, { color: colors.muted }]}>
                       Posez votre première question sur{"\n"}
-                      <Text style={{ color: colors.primary }}>{selectedMatiere.nom}</Text>
+                      <Text style={{ color: colors.primary }}>{selectedMatiere.nom_matiere}</Text>
                     </Text>
                   </View>
                 }

@@ -36,7 +36,8 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const res = await loginUser(trimEmail, trimPass);
-      await signIn(res.access_token);
+      const token = (res.access_token ?? res.token ?? "") as string;
+      await signIn(token);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/chat");
     } catch (err: unknown) {

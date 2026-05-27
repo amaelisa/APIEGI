@@ -14,10 +14,12 @@
       "backgroundColor": "#0d0e10"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.assistantgi.mobile"
     },
     "android": {
-      "backgroundColor": "#0d0e10"
+      "backgroundColor": "#0d0e10",
+      "package": "com.assistantgi.mobile"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
