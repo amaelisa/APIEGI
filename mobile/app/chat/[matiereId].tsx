@@ -12,7 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { KeyboardAvoidingView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Message, fetchChatHistory, sendChatMessage } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
