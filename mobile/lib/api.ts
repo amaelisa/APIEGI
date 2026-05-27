@@ -159,7 +159,14 @@ export async function fetchMatieres(niveau: string | null = null): Promise<Matie
     const err = await res.json().catch(() => ({}));
     throw new Error((err as any).detail || "Impossible de charger les matières.");
   }
-  return res.json();
+  const data = await res.json();
+  const rawList = Array.isArray(data) ? data : (data.matieres || []);
+  return rawList.map((m: any) => ({
+    id: m.id,
+    nom: m.nom_matiere || m.nom || "",
+    niveau: m.niveau,
+    description: m.description || "",
+  }));
 }
 
 export async function sendChatMessage(
