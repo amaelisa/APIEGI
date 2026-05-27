@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "lH3pl0WDkX4gW-nZAZw3w"
+uri = "file://artifacts/assistant-gi-mobile/assets/images/icon.png"
+type = "image"
+title = "generated_image"
