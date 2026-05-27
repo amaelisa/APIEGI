@@ -1,61 +1,49 @@
-# Variables d'environnement (contient les clés API et mots de passe)
-.env
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# Environnement virtuel Python
-venv/
-env/
-ENV/
-.venv/
+# compiled output
+dist
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# dependencies
+node_modules
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
 .DS_Store
+Thumbs.db
 
-# Logs
-*.log
-logs/
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
 
-# Base de données locale (si applicable)
-*.db
-*.sqlite
-*.sqlite3
-
-# Tests
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Node.js
-node_modules/
-frontend/node_modules/
-.eslintcache
-.parcel-cache
-.cache
-dist/
-frontend/dist/
+# Replit
+.cache/
+.local/
