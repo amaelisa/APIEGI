@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,24 +16,47 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { registerUser } from "@/lib/api";
-import { useColors } from "@/hooks/useColors";
+
+const C = {
+  bg: "#0d0e10",
+  bgElevated: "#111315",
+  bgInput: "#1e293b",
+  border: "#2d3238",
+  text: "#f1f5f9",
+  muted: "#94a3b8",
+  accent: "#93c5fd",
+  infoBg: "rgba(59,130,246,0.12)",
+  infoBorder: "rgba(59,130,246,0.3)",
+  infoText: "#93c5fd",
+  errorBg: "rgba(239,68,68,0.12)",
+  errorBorder: "rgba(239,68,68,0.35)",
+  errorText: "#fca5a5",
+};
 
 export default function RegisterScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [nomFocused, setNomFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passFocused, setPassFocused] = useState(false);
 
   const handleRegister = async () => {
     if (!nom.trim() || !email.trim() || !password.trim()) {
       setError("Veuillez remplir tous les champs.");
       return;
     }
+    if (password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
     setLoading(true);
     setError("");
+    setInfo("");
     try {
       await registerUser({ nom: nom.trim(), email: email.trim(), mot_de_passe: password });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -45,83 +69,119 @@ export default function RegisterScreen() {
     }
   };
 
-  const s = styles(colors);
-
   return (
-    <View style={[s.container, { paddingTop: Platform.OS === "web" ? 67 : 0, paddingBottom: Platform.OS === "web" ? 34 : 0 }]}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+    <View style={s.page}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
         <ScrollView
-          contentContainerStyle={[s.scroll, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 20 }]}
+          contentContainerStyle={[
+            s.scroll,
+            { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 24 },
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={s.title}>Créer un compte</Text>
-          <Text style={s.subtitle}>Rejoignez l'assistant pédagogique GI</Text>
-
-          <View style={s.form}>
-            <View style={s.field}>
-              <Text style={s.label}>Nom complet</Text>
-              <TextInput
-                style={s.input}
-                placeholder="Votre nom"
-                placeholderTextColor={colors.mutedForeground}
-                value={nom}
-                onChangeText={setNom}
-                autoCapitalize="words"
-                returnKeyType="next"
-              />
+          <View style={s.card}>
+            <View style={s.header}>
+              <View style={s.logoWrap}>
+                <Image
+                  source={require("../assets/images/logo.png")}
+                  style={s.logo}
+                  resizeMode="contain"
+                />
+              </View>
+              <Text style={s.title}>Inscription</Text>
+              <Text style={s.subtitle}>Compte étudiant GI — confirmation par email</Text>
             </View>
 
-            <View style={s.field}>
-              <Text style={s.label}>Email</Text>
-              <TextInput
-                style={s.input}
-                placeholder="etudiant@univ.fr"
-                placeholderTextColor={colors.mutedForeground}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                returnKeyType="next"
-              />
+            <View style={s.form}>
+              {error ? (
+                <View style={s.errorBox}>
+                  <Text style={s.errorText}>{error}</Text>
+                </View>
+              ) : null}
+              {info ? (
+                <View style={s.infoBox}>
+                  <Text style={s.infoText}>{info}</Text>
+                </View>
+              ) : null}
+
+              <View style={s.field}>
+                <Text style={s.label}>Nom complet</Text>
+                <TextInput
+                  style={[s.input, nomFocused && s.inputFocused]}
+                  placeholder="Jean Dupont"
+                  placeholderTextColor={C.muted}
+                  value={nom}
+                  onChangeText={setNom}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                  onFocus={() => setNomFocused(true)}
+                  onBlur={() => setNomFocused(false)}
+                />
+              </View>
+
+              <View style={s.field}>
+                <Text style={s.label}>Email</Text>
+                <TextInput
+                  style={[s.input, emailFocused && s.inputFocused]}
+                  placeholder="etudiant@univ.fr"
+                  placeholderTextColor={C.muted}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  returnKeyType="next"
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                />
+              </View>
+
+              <View style={s.field}>
+                <Text style={s.label}>Mot de passe</Text>
+                <TextInput
+                  style={[s.input, passFocused && s.inputFocused]}
+                  placeholder="••••••••"
+                  placeholderTextColor={C.muted}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  returnKeyType="done"
+                  onSubmitEditing={handleRegister}
+                  onFocus={() => setPassFocused(true)}
+                  onBlur={() => setPassFocused(false)}
+                />
+              </View>
+
+              <Pressable
+                onPress={handleRegister}
+                disabled={loading}
+                style={({ pressed }) => [s.btnWrap, { opacity: pressed || loading ? 0.5 : 1 }]}
+              >
+                <LinearGradient
+                  colors={["#2563eb", "#7c3aed"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={s.btn}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={s.btnText}>Créer mon compte</Text>
+                  )}
+                </LinearGradient>
+              </Pressable>
             </View>
 
-            <View style={s.field}>
-              <Text style={s.label}>Mot de passe</Text>
-              <TextInput
-                style={s.input}
-                placeholder="••••••••"
-                placeholderTextColor={colors.mutedForeground}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                returnKeyType="done"
-                onSubmitEditing={handleRegister}
-              />
+            <View style={s.footer}>
+              <Text style={s.footerText}>Déjà inscrit ? </Text>
+              <Pressable onPress={() => router.back()}>
+                <Text style={s.footerLink}>Se connecter</Text>
+              </Pressable>
             </View>
-
-            {error ? <Text style={s.error}>{error}</Text> : null}
-
-            <Pressable
-              onPress={handleRegister}
-              disabled={loading}
-              style={({ pressed }) => [s.btnWrap, { opacity: pressed ? 0.85 : 1 }]}
-            >
-              <LinearGradient colors={["#3b82f6", "#a855f7"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.btn}>
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={s.btnText}>S'inscrire</Text>
-                )}
-              </LinearGradient>
-            </Pressable>
-
-            <Pressable onPress={() => router.back()} style={s.link}>
-              <Text style={s.linkText}>
-                Déjà un compte ?{" "}
-                <Text style={{ color: colors.primary }}>Se connecter</Text>
-              </Text>
-            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -129,30 +189,138 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = (colors: ReturnType<typeof useColors>) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    scroll: { flexGrow: 1, alignItems: "center", paddingHorizontal: 24 },
-    title: { fontSize: 28, fontFamily: "Inter_700Bold", color: colors.primary, marginBottom: 6 },
-    subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginBottom: 40, textAlign: "center" },
-    form: { width: "100%", maxWidth: 380, gap: 16 },
-    field: { gap: 8 },
-    label: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.mutedForeground },
-    input: {
-      backgroundColor: colors.input,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: colors.radius,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      fontSize: 15,
-      fontFamily: "Inter_400Regular",
-      color: colors.foreground,
-    },
-    error: { color: colors.destructive, fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
-    btnWrap: { marginTop: 8, borderRadius: colors.radius, overflow: "hidden" },
-    btn: { paddingVertical: 16, alignItems: "center", justifyContent: "center" },
-    btnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
-    link: { alignItems: "center", marginTop: 4 },
-    linkText: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground },
-  });
+const s = StyleSheet.create({
+  page: {
+    flex: 1,
+    backgroundColor: C.bg,
+  },
+  scroll: {
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 420,
+    backgroundColor: "rgba(17,19,21,0.92)",
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 20,
+    padding: 32,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  logoWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: C.bgElevated,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+    overflow: "hidden",
+  },
+  logo: {
+    width: 52,
+    height: 52,
+  },
+  title: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    color: "#93c5fd",
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: C.muted,
+    textAlign: "center",
+    marginTop: 6,
+  },
+  form: {
+    gap: 16,
+  },
+  field: {
+    gap: 6,
+  },
+  label: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: C.muted,
+  },
+  input: {
+    backgroundColor: C.bgInput,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    color: C.text,
+  },
+  inputFocused: {
+    borderColor: "#3b82f6",
+  },
+  errorBox: {
+    backgroundColor: C.errorBg,
+    borderWidth: 1,
+    borderColor: C.errorBorder,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  errorText: {
+    color: C.errorText,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+  },
+  infoBox: {
+    backgroundColor: C.infoBg,
+    borderWidth: 1,
+    borderColor: C.infoBorder,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  infoText: {
+    color: C.infoText,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 20,
+  },
+  btnWrap: {
+    marginTop: 8,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  btn: {
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btnText: {
+    color: "#fff",
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+  },
+  footerText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: C.muted,
+  },
+  footerLink: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: C.accent,
+  },
+});
