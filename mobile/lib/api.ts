@@ -187,6 +187,15 @@ export async function sendChatMessage(
   return res.json();
 }
 
+export async function checkHealth(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/health`);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchChatHistory(matiereId: number | string): Promise<{ messages: Message[] }> {
   const res = await apiFetch(`/api/chat/history/${matiereId}`);
   if (!res.ok) {

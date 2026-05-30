@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { GradientText } from "@/components/GradientText";
 import { useAuth } from "@/context/AuthContext";
 import { loginUser } from "@/lib/api";
 
@@ -63,6 +64,25 @@ export default function LoginScreen() {
 
   return (
     <View style={s.page}>
+      {/* Blue glow at top — matches web radial-gradient */}
+      <View style={s.glowTop} pointerEvents="none">
+        <LinearGradient
+          colors={["rgba(59,130,246,0.18)", "transparent"]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{ flex: 1 }}
+        />
+      </View>
+      {/* Purple glow at bottom-right */}
+      <View style={s.glowBottom} pointerEvents="none">
+        <LinearGradient
+          colors={["transparent", "rgba(168,85,247,0.12)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ flex: 1 }}
+        />
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -161,24 +181,33 @@ export default function LoginScreen() {
   );
 }
 
-function GradientText({ text, fontSize }: { text: string; fontSize: number }) {
-  return (
-    <Text style={[s.gradientFallback, { fontSize, fontFamily: "Inter_700Bold" }]}>
-      {text}
-    </Text>
-  );
-}
-
 const s = StyleSheet.create({
   page: {
     flex: 1,
     backgroundColor: C.bg,
+  },
+  glowTop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 320,
+    zIndex: 0,
+  },
+  glowBottom: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    left: 0,
+    height: 240,
+    zIndex: 0,
   },
   scroll: {
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
+    zIndex: 1,
   },
   card: {
     width: "100%",
@@ -206,10 +235,6 @@ const s = StyleSheet.create({
   logo: {
     width: 52,
     height: 52,
-  },
-  gradientFallback: {
-    color: "#93c5fd",
-    marginBottom: 6,
   },
   subtitle: {
     fontSize: 13,

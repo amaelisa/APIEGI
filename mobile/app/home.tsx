@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
-import { Matiere, fetchMatieres } from "@/lib/api";
+import { Matiere, checkHealth, fetchMatieres } from "@/lib/api";
 
 const C = {
   bg: "#0d0e10",
@@ -40,12 +40,17 @@ export default function HomeScreen() {
   const [error, setError] = useState("");
   const [niveau, setNiveau] = useState("L1");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [apiOnline, setApiOnline] = useState<boolean | null>(null);
   const sidebarAnim = useRef(new Animated.Value(-320)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     loadMatieres();
   }, [niveau]);
+
+  useEffect(() => {
+    checkHealth().then(setApiOnline).catch(() => setApiOnline(false));
+  }, []);
 
   const loadMatieres = async () => {
     setLoading(true);
@@ -114,7 +119,7 @@ export default function HomeScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      {/* WELCOME */}
+      {/* MAIN CONTENT */}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[s.content, { paddingBottom: bottomPad + 16 }]}
@@ -265,8 +270,32 @@ export default function HomeScreen() {
               )}
             </ScrollView>
 
-            {/* Footer */}
+            {/* Footer — API status + logout */}
             <View style={[s.sidebarFooter, { paddingBottom: bottomPad + 10 }]}>
+              {/* API health indicator — matches web sidebar status dot */}
+              <View style={s.healthRow}>
+                <View
+                  style={[
+                    s.healthDot,
+                    {
+                      backgroundColor:
+                        apiOnline === true
+                          ? "#22c55e"
+                          : apiOnline === false
+                          ? "#ef4444"
+                          : "#94a3b8",
+                    },
+                  ]}
+                />
+                <Text style={s.healthText}>
+                  {apiOnline === true
+                    ? "API connectée"
+                    : apiOnline === false
+                    ? "API hors ligne"
+                    : "Vérification…"}
+                </Text>
+              </View>
+
               <TouchableOpacity onPress={handleLogout} style={s.btnLogout} activeOpacity={0.75}>
                 <Text style={s.btnLogoutText}>Déconnexion</Text>
               </TouchableOpacity>
@@ -426,7 +455,7 @@ const s = StyleSheet.create({
   matiereText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: C.muted,
+    color: C.text,
     lineHeight: 20,
   },
   backdrop: {
@@ -549,7 +578,7 @@ const s = StyleSheet.create({
   sidebarMatiereText: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: C.muted,
+    color: C.text,
     lineHeight: 18,
   },
   sidebarFooter: {
@@ -557,6 +586,23 @@ const s = StyleSheet.create({
     paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: C.border,
+    gap: 10,
+  },
+  healthRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 4,
+  },
+  healthDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  healthText: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: C.muted,
   },
   btnLogout: {
     paddingVertical: 10,

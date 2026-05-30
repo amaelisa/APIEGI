@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -14,6 +15,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Markdown from "react-native-markdown-display";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Message, fetchChatHistory, sendChatMessage } from "@/lib/api";
 
@@ -29,7 +31,6 @@ const C = {
   primary: "#3b82f6",
   accent: "#93c5fd",
   accentSoft: "rgba(59,130,246,0.18)",
-  userBubbleBg: "#1e3a5f",
   sendBtn: "#2563eb",
 };
 
@@ -37,6 +38,106 @@ interface DisplayMessage extends Message {
   id: string;
   isError?: boolean;
 }
+
+const markdownStyles = {
+  body: {
+    color: C.text,
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: "Inter_400Regular",
+    backgroundColor: "transparent",
+  },
+  paragraph: {
+    color: C.text,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 8,
+    marginTop: 0,
+  },
+  strong: {
+    color: C.text,
+    fontFamily: "Inter_700Bold",
+  },
+  em: {
+    color: C.text,
+    fontStyle: "italic" as const,
+  },
+  bullet_list: {
+    color: C.text,
+    marginLeft: 4,
+    marginBottom: 6,
+  },
+  ordered_list: {
+    color: C.text,
+    marginLeft: 4,
+    marginBottom: 6,
+  },
+  list_item: {
+    color: C.text,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  code_inline: {
+    backgroundColor: "#1a1d21",
+    color: C.accent,
+    fontSize: 13,
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    fontFamily: "Inter_400Regular",
+  },
+  fence: {
+    backgroundColor: "#1a1d21",
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 8,
+    color: C.accent,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+  },
+  code_block: {
+    backgroundColor: "#1a1d21",
+    borderRadius: 8,
+    padding: 12,
+    color: C.accent,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+  },
+  heading1: {
+    color: C.text,
+    fontFamily: "Inter_700Bold",
+    fontSize: 20,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  heading2: {
+    color: C.text,
+    fontFamily: "Inter_700Bold",
+    fontSize: 18,
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  heading3: {
+    color: C.text,
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+    marginBottom: 4,
+    marginTop: 4,
+  },
+  blockquote: {
+    backgroundColor: "rgba(59,130,246,0.08)",
+    borderLeftColor: C.primary,
+    borderLeftWidth: 3,
+    paddingLeft: 12,
+    paddingVertical: 4,
+    marginVertical: 6,
+    borderRadius: 4,
+  },
+  hr: {
+    backgroundColor: C.border,
+    height: 1,
+    marginVertical: 12,
+  },
+};
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
@@ -120,7 +221,7 @@ export default function ChatScreen() {
 
   return (
     <View style={s.container}>
-      {/* HEADER — mirrors ChatArea.css .chat-header */}
+      {/* HEADER */}
       <View style={[s.header, { paddingTop: topPad + 10 }]}>
         <Pressable onPress={() => router.back()} style={s.menuBtn} hitSlop={8}>
           <Feather name="arrow-left" size={22} color={C.text} />
@@ -211,9 +312,9 @@ export default function ChatScreen() {
                       resizeMode="contain"
                     />
                   </View>
-                  <View style={[s.bubble, s.assistantBubble, s.typingBubble]}>
+                  <View style={[s.assistantBubble, s.typingBubble]}>
                     <ActivityIndicator size="small" color={C.accent} />
-                    <Text style={[s.bubbleText, { color: C.muted, marginLeft: 8 }]}>
+                    <Text style={[{ color: C.muted, marginLeft: 8, fontSize: 14, fontFamily: "Inter_400Regular" }]}>
                       En train de répondre…
                     </Text>
                   </View>
@@ -231,23 +332,27 @@ export default function ChatScreen() {
                     />
                   </View>
                 )}
-                <View
-                  style={[
-                    s.bubble,
-                    item.role === "user" ? s.userBubble : s.assistantBubble,
-                    item.isError && s.errorBubble,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      s.bubbleText,
-                      item.role === "user" ? s.userBubbleText : s.assistantBubbleText,
-                      item.isError && s.errorBubbleText,
-                    ]}
+
+                {item.role === "user" ? (
+                  <LinearGradient
+                    colors={["#1e3a5f", "#312e81", "#4c1d95"]}
+                    locations={[0, 0.55, 1]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={s.userBubble}
                   >
-                    {item.content}
-                  </Text>
-                </View>
+                    <Text style={s.userBubbleText}>{item.content}</Text>
+                  </LinearGradient>
+                ) : item.isError ? (
+                  <View style={s.errorBubble}>
+                    <Text style={s.errorBubbleText}>{item.content}</Text>
+                  </View>
+                ) : (
+                  <View style={s.assistantBubble}>
+                    <Markdown style={markdownStyles}>{item.content}</Markdown>
+                  </View>
+                )}
+
                 {item.role === "user" && (
                   <View style={s.userAvatar}>
                     <Text style={s.userAvatarText}>Vous</Text>
@@ -258,7 +363,7 @@ export default function ChatScreen() {
           />
         )}
 
-        {/* INPUT BAR — mirrors .chat-input-pill */}
+        {/* INPUT BAR */}
         <View style={[s.inputBar, { paddingBottom: bottomPad + 14 }]}>
           <View style={[s.inputPill, inputFocused && s.inputPillFocused]}>
             <TextInput
@@ -457,17 +562,21 @@ const s = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     color: C.accent,
   },
-  bubble: {
-    maxWidth: "82%",
-    borderRadius: 18,
-  },
   userBubble: {
-    backgroundColor: C.userBubbleBg,
+    maxWidth: "82%",
+    borderRadius: 20,
+    borderBottomRightRadius: 4,
     paddingHorizontal: 16,
     paddingVertical: 13,
-    borderBottomRightRadius: 4,
+  },
+  userBubbleText: {
+    color: "#fff",
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 22,
   },
   assistantBubble: {
+    maxWidth: "82%",
     paddingHorizontal: 4,
     paddingVertical: 4,
   },
@@ -478,6 +587,7 @@ const s = StyleSheet.create({
     paddingVertical: 12,
   },
   errorBubble: {
+    maxWidth: "82%",
     backgroundColor: "rgba(251,191,36,0.1)",
     borderWidth: 1,
     borderColor: "rgba(251,191,36,0.3)",
@@ -485,19 +595,11 @@ const s = StyleSheet.create({
     paddingVertical: 13,
     borderRadius: 14,
   },
-  bubbleText: {
+  errorBubbleText: {
+    color: "#fcd34d",
     fontSize: 15,
     fontFamily: "Inter_400Regular",
     lineHeight: 22,
-  },
-  userBubbleText: {
-    color: "#fff",
-  },
-  assistantBubbleText: {
-    color: C.text,
-  },
-  errorBubbleText: {
-    color: "#fcd34d",
   },
   inputBar: {
     paddingHorizontal: 16,
