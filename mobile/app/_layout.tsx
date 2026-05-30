@@ -26,8 +26,7 @@ function RootLayoutNav() {
       <Stack.Screen name="login" />
       <Stack.Screen name="register" />
       <Stack.Screen name="verify" />
-      <Stack.Screen name="home" />
-      <Stack.Screen name="chat/[matiereId]" />
+      <Stack.Screen name="chat" />
     </Stack>
   );
 }
@@ -67,9 +66,9 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView style={{ flex: 1 }} onLayout={hideSplash}>
-              <AuthProvider>
-                <RootLayoutNav />
-              </AuthProvider>
+            <AuthProvider>
+              <RootLayoutNav />
+            </AuthProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
       </ErrorBoundary>

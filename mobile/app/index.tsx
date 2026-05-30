@@ -1,29 +1,20 @@
 import { Redirect } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
-import { useColors } from "@/hooks/useColors";
 
 export default function IndexScreen() {
   const { user, isLoading } = useAuth();
-  const colors = useColors();
 
   if (isLoading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.background,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={{ flex: 1, backgroundColor: "#0d0e10", alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
 
   if (user) {
-    return <Redirect href="/home" />;
+    return <Redirect href="/chat" />;
   }
 
   return <Redirect href="/login" />;
