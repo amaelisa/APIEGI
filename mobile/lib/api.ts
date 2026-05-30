@@ -168,13 +168,29 @@ export async function fetchMatieres(niveau: string | null = null): Promise<Matie
   }));
 }
 
+export interface PdfFile {
+  uri: string;
+  name: string;
+  mimeType?: string;
+  size?: number;
+}
+
 export async function sendChatMessage(
   matiereId: number | string,
-  message: string
+  message: string,
+  pdfFile?: PdfFile | null
 ): Promise<{ reply: string; autorise?: boolean }> {
   const body = new FormData();
   body.append("matiere_id", String(matiereId));
   body.append("message", message);
+
+  if (pdfFile) {
+    body.append("file", {
+      uri: pdfFile.uri,
+      name: pdfFile.name,
+      type: pdfFile.mimeType || "application/pdf",
+    } as any);
+  }
 
   const res = await apiFetch("/api/chat", {
     method: "POST",

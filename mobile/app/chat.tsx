@@ -1,10 +1,12 @@
 import { Feather } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   FlatList,
   Image,
@@ -24,6 +26,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
   Matiere,
   Message,
+  PdfFile,
   checkHealth,
   fetchChatHistory,
   fetchMatieres,
@@ -43,6 +46,9 @@ const C = {
   accent: "#93c5fd",
   accentSoft: "rgba(59,130,246,0.18)",
   sendBtn: "#2563eb",
+  pdfBg: "rgba(239,68,68,0.12)",
+  pdfBorder: "rgba(239,68,68,0.35)",
+  pdfText: "#fca5a5",
 };
 
 const NIVEAUX = ["L1", "L2", "L3"];
@@ -122,6 +128,7 @@ export default function ChatScreen() {
   const [input, setInput] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pdfFile, setPdfFile] = useState<PdfFile | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
   const sidebarAnim = useRef(new Animated.Value(-320)).current;
@@ -198,6 +205,7 @@ export default function ChatScreen() {
   const handleNewChat = () => {
     Haptics.selectionAsync();
     setMessages([]);
+    setPdfFile(null);
     closeSidebar();
   };
 
@@ -208,17 +216,65 @@ export default function ChatScreen() {
     router.replace("/login");
   };
 
+  const handlePickPdf = async () => {
+    if (!selectedMatiere) {
+      Alert.alert("Sélectionnez d'abord une matière", "Choisissez une matière dans le menu avant d'importer un PDF.");
+      return;
+    }
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      if (!asset) return;
+
+      const fileSizeMB = asset.size ? asset.size / (1024 * 1024) : 0;
+      if (fileSizeMB > 10) {
+        Alert.alert("Fichier trop volumineux", "Veuillez choisir un PDF de moins de 10 Mo.");
+        return;
+      }
+
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setPdfFile({
+        uri: asset.uri,
+        name: asset.name,
+        mimeType: asset.mimeType || "application/pdf",
+        size: asset.size,
+      });
+    } catch (e: any) {
+      Alert.alert("Erreur", "Impossible d'ouvrir le sélecteur de fichiers.");
+    }
+  };
+
+  const handleRemovePdf = () => {
+    Haptics.selectionAsync();
+    setPdfFile(null);
+  };
+
   const handleSend = async () => {
     const text = input.trim();
-    if (!text || sending || !selectedMatiere) return;
-    const userMsg: DisplayMessage = { id: `u-${Date.now()}`, role: "user", content: text };
+    if ((!text && !pdfFile) || sending || !selectedMatiere) return;
+
+    const displayText = pdfFile
+      ? `📎 ${pdfFile.name}${text ? `\n\n${text}` : ""}`
+      : text;
+
+    const userMsg: DisplayMessage = { id: `u-${Date.now()}`, role: "user", content: displayText };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    const sentPdf = pdfFile;
+    setPdfFile(null);
     setSending(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
     try {
-      const data = await sendChatMessage(selectedMatiere.id, text);
+      const data = await sendChatMessage(
+        selectedMatiere.id,
+        text || "Analyse ce document PDF.",
+        sentPdf
+      );
       const reply: DisplayMessage = { id: `a-${Date.now()}`, role: "assistant", content: data.reply || "" };
       setMessages((prev) => [...prev, reply]);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
@@ -236,6 +292,8 @@ export default function ChatScreen() {
   };
 
   const showWelcome = messages.length === 0 && !loadingHistory && !sending;
+
+  const canSend = (!!input.trim() || !!pdfFile) && !sending && !!selectedMatiere;
 
   return (
     <View style={s.root}>
@@ -297,8 +355,8 @@ export default function ChatScreen() {
                   />
                   <Text style={s.welcomeTitle}>Assistant Pédagogique GI</Text>
                   <Text style={s.welcomeDesc}>
-                    Posez vos questions sur la matière sélectionnée. L'assistante
-                    Gemini vous répond dans le contexte du cursus Génie Informatique.
+                    Posez vos questions sur la matière sélectionnée ou importez un PDF.
+                    L'assistante Gemini vous répond dans le contexte du cursus Génie Informatique.
                   </Text>
                   {selectedMatiere ? (
                     <View style={s.chips}>
@@ -317,6 +375,12 @@ export default function ChatScreen() {
                         }
                       >
                         <Text style={s.chipText}>Notions fondamentales</Text>
+                      </Pressable>
+                      <Pressable
+                        style={s.chip}
+                        onPress={handlePickPdf}
+                      >
+                        <Text style={s.chipText}>📎 Importer un PDF</Text>
                       </Pressable>
                     </View>
                   ) : null}
@@ -382,11 +446,45 @@ export default function ChatScreen() {
 
         {/* ───── INPUT BAR ───── */}
         <View style={[s.inputBar, { paddingBottom: bottomPad + 14 }]}>
+          {/* PDF attachment badge */}
+          {pdfFile && (
+            <View style={s.pdfBadge}>
+              <Feather name="file-text" size={13} color={C.pdfText} />
+              <Text style={s.pdfBadgeName} numberOfLines={1}>
+                {pdfFile.name}
+              </Text>
+              {pdfFile.size && (
+                <Text style={s.pdfBadgeSize}>
+                  {(pdfFile.size / 1024).toFixed(0)} Ko
+                </Text>
+              )}
+              <Pressable onPress={handleRemovePdf} hitSlop={8} style={s.pdfRemoveBtn}>
+                <Feather name="x" size={14} color={C.pdfText} />
+              </Pressable>
+            </View>
+          )}
+
           <View style={[s.inputPill, inputFocused && s.inputPillFocused]}>
+            {/* PDF button */}
+            <Pressable
+              onPress={handlePickPdf}
+              disabled={sending || !selectedMatiere}
+              style={({ pressed }) => [
+                s.pdfBtn,
+                (!selectedMatiere || sending) && s.pdfBtnDisabled,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+              hitSlop={4}
+            >
+              <Feather name="paperclip" size={18} color={pdfFile ? C.primary : C.muted} />
+            </Pressable>
+
             <TextInput
               style={s.textInput}
               placeholder={
-                selectedMatiere
+                pdfFile
+                  ? "Ajoutez un message ou envoyez directement…"
+                  : selectedMatiere
                   ? "Posez votre question ou importez un PDF…"
                   : "Choisissez une matière dans le menu"
               }
@@ -401,10 +499,10 @@ export default function ChatScreen() {
             />
             <Pressable
               onPress={handleSend}
-              disabled={!input.trim() || sending || !selectedMatiere}
+              disabled={!canSend}
               style={({ pressed }) => [
                 s.sendBtn,
-                (!input.trim() || sending || !selectedMatiere) && s.sendBtnDisabled,
+                !canSend && s.sendBtnDisabled,
                 { opacity: pressed ? 0.8 : 1 },
               ]}
             >
@@ -648,7 +746,42 @@ const s = StyleSheet.create({
   errorBubbleText: { color: "#fcd34d", fontSize: 15, fontFamily: "Inter_400Regular", lineHeight: 22 },
 
   // ─── Input bar ───
-  inputBar: { paddingHorizontal: 14, paddingTop: 14, backgroundColor: C.bg },
+  inputBar: { paddingHorizontal: 14, paddingTop: 10, backgroundColor: C.bg },
+
+  pdfBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: C.pdfBg,
+    borderWidth: 1,
+    borderColor: C.pdfBorder,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  pdfBadgeName: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: C.pdfText,
+  },
+  pdfBadgeSize: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: C.muted,
+    flexShrink: 0,
+  },
+  pdfRemoveBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(239,68,68,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+
   inputPill: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -656,11 +789,23 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
     borderRadius: 9999,
-    paddingLeft: 18,
+    paddingLeft: 10,
     paddingRight: 6,
     paddingVertical: 6,
   },
   inputPillFocused: { borderColor: C.primary },
+
+  pdfBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginRight: 4,
+  },
+  pdfBtnDisabled: { opacity: 0.3 },
+
   textInput: {
     flex: 1,
     fontSize: 15,
@@ -767,30 +912,34 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   sidebarMatiereItemActive: {
-    backgroundColor: "rgba(59,130,246,0.15)",
-    borderColor: "rgba(96,165,250,0.35)",
+    backgroundColor: "rgba(59,130,246,0.12)",
+    borderColor: "rgba(59,130,246,0.3)",
   },
-  sidebarMatiereText: { fontSize: 13, fontFamily: "Inter_400Regular", color: C.text, lineHeight: 18 },
-  sidebarMatiereTextActive: { color: "#bfdbfe" },
+  sidebarMatiereText: { fontSize: 13, fontFamily: "Inter_400Regular", color: C.muted },
+  sidebarMatiereTextActive: { color: C.accent, fontFamily: "Inter_500Medium" },
   errorText: { color: "#f87171", fontSize: 13, fontFamily: "Inter_400Regular", padding: 12 },
+
+  // ─── Footer ───
   sidebarFooter: {
     paddingHorizontal: 16,
     paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: C.border,
-    gap: 10,
+    gap: 12,
   },
-  healthRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 4 },
+  healthRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   healthDot: { width: 8, height: 8, borderRadius: 4 },
   healthText: { fontSize: 12, fontFamily: "Inter_400Regular", color: C.muted },
   btnLogout: {
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 9999,
+    backgroundColor: "rgba(239,68,68,0.1)",
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(239,68,68,0.25)",
     alignItems: "center",
     minHeight: 44,
     justifyContent: "center",
   },
-  btnLogoutText: { fontSize: 13, fontFamily: "Inter_400Regular", color: C.muted },
+  btnLogoutText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#f87171" },
 });
